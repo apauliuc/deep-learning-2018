@@ -21,14 +21,31 @@ from __future__ import print_function
 import torch
 import torch.nn as nn
 
+
 ################################################################################
 
 class VanillaRNN(nn.Module):
 
-    def __init__(self, seq_length, input_dim, num_hidden, num_classes, batch_size, device='cpu'):
+    def __init__(self, seq_length, input_dim, num_hidden, num_classes, batch_size, device=torch.device('cpu')):
         super(VanillaRNN, self).__init__()
-        # Initialization here ...
+        self.seq_length = seq_length
+        self.device = device
+        self.num_hidden = num_hidden
+        self.batch_size = batch_size
+
+        # Parameter initialisation
+        self.W_hx = nn.Parameter(nn.init.xavier_normal_(torch.empty(num_hidden, input_dim)))
+        self.W_hh = nn.Parameter(nn.init.xavier_normal_(torch.empty((num_hidden, num_hidden))))
+        self.W_ph = nn.Parameter(nn.init.xavier_normal_(torch.empty((num_classes, num_hidden))))
+
+        self.b_h = nn.Parameter(torch.zeros(num_hidden, 1))
+        self.b_p = nn.Parameter(torch.zeros(num_classes, 1))
 
     def forward(self, x):
-        # Implementation here ...
-        pass
+        h = torch.zeros(self.num_hidden, self.batch_size).to(device=self.device)
+
+        for t in range(self.seq_length):
+            x_t = x[:, t].reshape(1, -1).to(device=self.device)
+            h = torch.tanh(self.W_hx @ x_t + self.W_hh @ h + self.b_h)
+
+        return torch.t(self.W_ph @ h + self.b_p)
